@@ -4,6 +4,7 @@ use App\Http\Controllers\LoadBalancing\PCCController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ToolController;
 use App\Http\Middleware\EnsureUserIsPremium;
+use App\Models\SavedScript;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -18,7 +19,9 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Dashboard', [
+        'savedScripts' => SavedScript::where('user_id', auth()->id())->latest()->get()
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -29,6 +32,7 @@ Route::middleware('auth')->group(function () {
     // Free Tools
     Route::get('/qos/simple-queue', function() { return Inertia::render('QoS/SimpleQueue'); })->name('qos.simple-queue');
     Route::get('/hotspot/user-profile', function() { return Inertia::render('Hotspot/UserProfile'); })->name('hotspot.user-profile');
+    Route::get('/routing/content-routing', function() { return Inertia::render('Routing/ContentRouting'); })->name('routing.content-routing');
 
     // Premium Tools
     Route::middleware([EnsureUserIsPremium::class])->group(function () {
@@ -40,9 +44,10 @@ Route::middleware('auth')->group(function () {
 
     // Save Tool Script
     Route::post('/tools/save', [ToolController::class, 'store'])->name('tools.save');
+    Route::delete('/tools/{id}', [ToolController::class, 'destroy'])->name('tools.destroy');
 
-    // Subscription Placeholder
-    Route::get('/subscription', function() { return Inertia::render('Subscription/Index'); })->name('subscription');
+    // Subscription
+    Route::get('/subscription', function() { return Inertia::render('Subscription'); })->name('subscription');
 });
 
 require __DIR__.'/auth.php';

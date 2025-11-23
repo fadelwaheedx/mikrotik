@@ -27,4 +27,12 @@ class ToolController extends Controller
 
         return redirect()->back()->with('success', 'Script saved successfully.');
     }
+
+    public function destroy($id)
+    {
+        $script = SavedScript::where('user_id', auth()->id())->findOrFail($id);
+        $script->delete();
+
+        return redirect()->back()->with('success', 'Script deleted successfully.');
+    }
 }
