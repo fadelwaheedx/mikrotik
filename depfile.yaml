@@ -1,0 +1,25 @@
+paths:
+  - ./app
+  - ./tests
+exclude_files:
+  - '#.*test.*#'
+layers:
+  - name: Controllers
+    collectors:
+      - type: className
+        regex: ^App\\Http\\Controllers\\.*
+  - name: Services
+    collectors:
+      - type: className
+        regex: ^App\\Services\\.*
+  - name: Models
+    collectors:
+      - type: className
+        regex: ^App\\Models\\.*
+ruleset:
+  Controllers:
+    - Services
+    - Models
+  Services:
+    - Models
+  Models: []

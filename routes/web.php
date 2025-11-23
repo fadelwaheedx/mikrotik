@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GameController;
 use App\Http\Controllers\LoadBalancing\PCCController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ToolController;
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
     // Save Tool Script
     Route::post('/tools/save', [ToolController::class, 'store'])->name('tools.save');
     Route::delete('/tools/{id}', [ToolController::class, 'destroy'])->name('tools.destroy');
+
+    // API Routes (Consumed by Frontend)
+    Route::get('/api/games', [GameController::class, 'index'])->name('api.games');
 
     // Subscription
     Route::get('/subscription', function() { return Inertia::render('Subscription'); })->name('subscription');

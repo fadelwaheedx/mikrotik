@@ -1,0 +1,13 @@
+# CODEOWNERS file
+# This file is used to define who owns what parts of the codebase.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owner
+*       @backend-team
+
+# Backend
+app/    @backend-team
+tests/  @backend-team
+
+# Frontend
+resources/js/  @frontend-team

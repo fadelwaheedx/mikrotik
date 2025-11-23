@@ -18,7 +18,9 @@
         "nunomaduro/collision": "^8.0",
         "pestphp/pest": "^3.0",
         "pestphp/pest-plugin-laravel": "^3.0",
-        "spatie/laravel-ignition": "^2.4"
+        "spatie/laravel-ignition": "^2.4",
+        "nunomaduro/phpinsights": "^2.11",
+        "qossmic/deptrac": "^1.0"
     },
     "autoload": {
         "psr-4": {

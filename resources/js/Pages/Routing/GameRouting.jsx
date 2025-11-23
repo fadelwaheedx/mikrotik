@@ -1,36 +1,47 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import ScriptGenerator from '@/Components/ScriptGenerator';
 import { MikrotikLogic } from '@/Utils/MikrotikLogic';
-
-// Mock Database of Games
-const GAME_DATABASE = [
-    { id: 'mlbb', name: 'Mobile Legends: Bang Bang', ports: { tcp: ['30000-30200'], udp: ['9000-9050', '30000-30200'] } },
-    { id: 'pubg', name: 'PUBG Mobile', ports: { tcp: ['17500'], udp: ['10000-14000', '17000', '20000-20002'] } },
-    { id: 'ff', name: 'FreeFire', ports: { tcp: ['10000-10002'], udp: ['10000-10008', '17000'] } },
-    { id: 'valorant', name: 'Valorant', ports: { tcp: ['2099', '5222-5223', '8088', '8393-8400'], udp: ['5000-5500', '8088'] } },
-    { id: 'genshin', name: 'Genshin Impact', ports: { tcp: ['4244', '5222', '11000-14000'], udp: ['4244', '5222', '11000-14000'] } },
-];
+import axios from 'axios';
 
 export default function GameRouting() {
     const [script, setScript] = useState('');
     const [version, setVersion] = useState('v7');
+    const [games, setGames] = useState([]);
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm({
         defaultValues: {
-            gameId: '',
+            gameSlug: '',
             gateway: ''
         }
     });
 
+    useEffect(() => {
+        axios.get('/api/games')
+            .then(response => {
+                setGames(response.data);
+            })
+            .catch(error => {
+                console.error("Error fetching games:", error);
+                // Fallback or empty state could be handled here
+            });
+    }, []);
+
     const onSubmit = (data) => {
-        const selectedGame = GAME_DATABASE.find(g => g.id === data.gameId);
+        const selectedGame = games.find(g => g.slug === data.gameSlug);
 
         if (!selectedGame) return;
 
         const payload = {
-            game: selectedGame,
+            game: {
+                id: selectedGame.slug,
+                name: selectedGame.name,
+                ports: {
+                    tcp: selectedGame.ports_tcp ? Object.values(selectedGame.ports_tcp) : [],
+                    udp: selectedGame.ports_udp ? Object.values(selectedGame.ports_udp) : []
+                }
+            },
             gateway: data.gateway,
             version: version
         };
@@ -44,15 +55,15 @@ export default function GameRouting() {
             <div>
                 <label className="block text-sm font-medium text-gray-700">Select Game</label>
                 <select
-                    {...register("gameId", { required: "Please select a game" })}
+                    {...register("gameSlug", { required: "Please select a game" })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-mikrotik-blue focus:ring-mikrotik-blue sm:text-sm py-2 px-3 bg-white"
                 >
                     <option value="">-- Select Game --</option>
-                    {GAME_DATABASE.map(game => (
-                        <option key={game.id} value={game.id}>{game.name}</option>
+                    {games.map(game => (
+                        <option key={game.id} value={game.slug}>{game.name}</option>
                     ))}
                 </select>
-                {errors.gameId && <span className="text-xs text-red-500">{errors.gameId.message}</span>}
+                {errors.gameSlug && <span className="text-xs text-red-500">{errors.gameSlug.message}</span>}
             </div>
 
             <div>
@@ -68,16 +79,18 @@ export default function GameRouting() {
             </div>
 
             {/* Helper info showing selected game ports */}
-            {watch('gameId') && (
+            {watch('gameSlug') && (
                 <div className="mt-4 p-4 bg-gray-50 rounded text-xs text-gray-600 border">
                     <p className="font-semibold">Selected Game Ports:</p>
                     {(() => {
-                        const game = GAME_DATABASE.find(g => g.id === watch('gameId'));
+                        const game = games.find(g => g.slug === watch('gameSlug'));
                         if (!game) return null;
+                        const tcpPorts = game.ports_tcp ? Object.values(game.ports_tcp) : [];
+                        const udpPorts = game.ports_udp ? Object.values(game.ports_udp) : [];
                         return (
                             <div className="mt-2 space-y-1">
-                                <p><span className="font-medium">TCP:</span> {game.ports.tcp.join(', ')}</p>
-                                <p><span className="font-medium">UDP:</span> {game.ports.udp.join(', ')}</p>
+                                <p><span className="font-medium">TCP:</span> {tcpPorts.join(', ') || 'None'}</p>
+                                <p><span className="font-medium">UDP:</span> {udpPorts.join(', ') || 'None'}</p>
                             </div>
                         );
                     })()}
