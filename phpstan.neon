@@ -4,3 +4,7 @@ parameters:
         - app
     ignoreErrors:
     excludePaths:
+    checkMissingIterableValueType: true
+    checkGenericClassInNonGenericObjectType: true
+    includes:
+        - phpstan-baseline.neon

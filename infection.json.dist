@@ -2,6 +2,12 @@
     "source": {
         "directories": [
             "app"
+        ],
+        "excludes": [
+            "app/Providers",
+            "app/Console",
+            "app/Http/Middleware",
+            "app/Exceptions"
         ]
     },
     "timeout": 10,

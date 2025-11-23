@@ -1,38 +1,28 @@
 <?php
 
-namespace Tests\Feature;
-
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-class ToolAccessTest extends TestCase
-{
-    use RefreshDatabase;
+test('guest is redirected to login', function () {
+    $response = $this->get(route('load-balancing.pcc'));
+    $response->assertRedirect(route('login'));
+});
 
-    public function test_guest_redirected_to_login(): void
-    {
-        $response = $this->get(route('load-balancing.pcc'));
-        $response->assertRedirect(route('login'));
-    }
+test('free user is redirected to subscription', function () {
+    $user = User::factory()->create(['is_premium' => false]);
 
-    public function test_free_user_redirected_to_subscription(): void
-    {
-        $user = User::factory()->create(['is_premium' => false]);
-        $response = $this->actingAs($user)->get(route('load-balancing.pcc'));
+    $response = $this->actingAs($user)->get(route('load-balancing.pcc'));
 
-        $response->assertRedirect(route('subscription'));
-        $response->assertSessionHas('error'); // Check flash message
-    }
+    $response->assertRedirect(route('subscription'));
+    $response->assertSessionHas('error');
+});
 
-    public function test_premium_user_can_access_pcc(): void
-    {
-        $user = User::factory()->create(['is_premium' => true]);
-        $response = $this->actingAs($user)->get(route('load-balancing.pcc'));
+test('premium user can access pcc', function () {
+    $user = User::factory()->create(['is_premium' => true]);
 
-        $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page
-            ->component('LoadBalancing/PCC')
-        );
-    }
-}
+    $response = $this->actingAs($user)->get(route('load-balancing.pcc'));
+
+    $response->assertStatus(200);
+    $response->assertInertia(fn ($page) => $page
+        ->component('LoadBalancing/PCC')
+    );
+});
