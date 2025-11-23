@@ -7,11 +7,18 @@ export default function ScriptGenerator({
     description,
     form,
     generatedScript,
-    dataToSave = {} // Optional: Object containing the form input data to save
+    dataToSave = {}, // Optional: Object containing the form input data to save
+    onVersionChange = null // Optional: Callback when version toggles
 }) {
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [version, setVersion] = useState('v7');
     const { auth } = usePage().props;
+
+    const handleVersionToggle = (v) => {
+        setVersion(v);
+        if (onVersionChange) onVersionChange(v);
+    };
 
     const handleCopy = () => {
         if (generatedScript) {
@@ -70,7 +77,24 @@ export default function ScriptGenerator({
                 {/* Left Column: Input Form */}
                 <div className="lg:col-span-5 space-y-6">
                     <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-                        <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b">Configuration</h2>
+                        <div className="flex items-center justify-between border-b pb-2 mb-4">
+                            <h2 className="text-lg font-medium text-gray-900">Configuration</h2>
+                            {/* Version Toggle */}
+                            <div className="flex bg-gray-100 rounded p-1">
+                                <button
+                                    onClick={() => handleVersionToggle('v6')}
+                                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${version === 'v6' ? 'bg-white shadow text-mikrotik-blue' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    v6 (Legacy)
+                                </button>
+                                <button
+                                    onClick={() => handleVersionToggle('v7')}
+                                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${version === 'v7' ? 'bg-white shadow text-mikrotik-blue' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    v7 (Modern)
+                                </button>
+                            </div>
+                        </div>
                         {form}
                     </div>
                 </div>

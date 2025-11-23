@@ -15,6 +15,7 @@ const GAME_DATABASE = [
 
 export default function GameRouting() {
     const [script, setScript] = useState('');
+    const [version, setVersion] = useState('v7');
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm({
         defaultValues: {
@@ -30,7 +31,8 @@ export default function GameRouting() {
 
         const payload = {
             game: selectedGame,
-            gateway: data.gateway
+            gateway: data.gateway,
+            version: version
         };
 
         const generated = MikrotikLogic.generateGameRouting(payload);
@@ -100,6 +102,7 @@ export default function GameRouting() {
                 description="Force specific game traffic through a dedicated VPN or Gateway to reduce lag."
                 form={GameRoutingForm}
                 generatedScript={script}
+                onVersionChange={setVersion}
             />
         </AppLayout>
     );

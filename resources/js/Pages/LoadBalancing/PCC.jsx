@@ -7,6 +7,7 @@ import { Plus, Trash2 } from 'lucide-react';
 
 export default function PCC() {
     const [script, setScript] = useState('');
+    const [version, setVersion] = useState('v7');
 
     const { register, control, handleSubmit, watch, formState: { errors } } = useForm({
         defaultValues: {
@@ -25,7 +26,7 @@ export default function PCC() {
     });
 
     const onSubmit = (data) => {
-        const generated = MikrotikLogic.generatePCC(data);
+        const generated = MikrotikLogic.generatePCC({ ...data, version });
         setScript(generated);
     };
 
@@ -139,6 +140,7 @@ export default function PCC() {
                 description="Distribute traffic across multiple WAN connections using Per Connection Classifier (PCC) with optional failover."
                 form={PCCForm}
                 generatedScript={script}
+                onVersionChange={setVersion}
             />
         </AppLayout>
     );
