@@ -1,13 +1,17 @@
-import { Copy, Download } from 'lucide-react';
+import { Copy, Download, Save } from 'lucide-react';
 import { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 
 export default function ScriptGenerator({
     title,
     description,
     form,
-    generatedScript
+    generatedScript,
+    dataToSave = {} // Optional: Object containing the form input data to save
 }) {
     const [copyFeedback, setCopyFeedback] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { auth } = usePage().props;
 
     const handleCopy = () => {
         if (generatedScript) {
@@ -15,6 +19,32 @@ export default function ScriptGenerator({
             setCopyFeedback(true);
             setTimeout(() => setCopyFeedback(false), 2000);
         }
+    };
+
+    const handleSave = () => {
+        if (!generatedScript) return;
+        if (!auth.user) {
+             alert("Please login to save scripts.");
+             return;
+        }
+
+        setIsSaving(true);
+        router.post('/tools/save', {
+            title: title,
+            type: 'script', // Generic type, controller can handle specific logic if needed
+            config_json: JSON.stringify(dataToSave),
+            generated_script: generatedScript
+        }, {
+            onSuccess: () => {
+                setIsSaving(false);
+                // Toast notification would go here
+                alert("Script saved to your profile!");
+            },
+            onError: () => {
+                setIsSaving(false);
+                alert("Failed to save script.");
+            }
+        });
     };
 
     const handleDownload = () => {
@@ -64,6 +94,18 @@ export default function ScriptGenerator({
                                 >
                                     <Download className="h-3.5 w-3.5 mr-1.5" />
                                     Download .rsc
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving || !generatedScript}
+                                    className={`inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white focus:outline-none ${
+                                        isSaving || !generatedScript
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-mikrotik-green hover:bg-green-700'
+                                    }`}
+                                >
+                                    <Save className="h-3.5 w-3.5 mr-1.5" />
+                                    {isSaving ? 'Saving...' : 'Save'}
                                 </button>
                             </div>
                         </div>
