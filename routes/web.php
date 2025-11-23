@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
     // Placeholders for other routes mentioned in plan
     Route::get('/load-balancing/ecmp', function() { return Inertia::render('LoadBalancing/ECMP'); })->name('load-balancing.ecmp');
     Route::get('/qos/simple-queue', function() { return Inertia::render('QoS/SimpleQueue'); })->name('qos.simple-queue');
-    Route::get('/routing/game-ports', function() { return Inertia::render('Routing/GamePorts'); })->name('routing.game-ports');
+    Route::get('/routing/game-ports', function() { return Inertia::render('Routing/GameRouting'); })->name('routing.game-ports');
 });
 
 require __DIR__.'/auth.php';
