@@ -60,7 +60,6 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            // Visual Spatie Foundation Plugins
             ->plugins([
                 FilamentRolesPermissionsPlugin::make(),
                 SpatieLaravelSettingsPlugin::new()

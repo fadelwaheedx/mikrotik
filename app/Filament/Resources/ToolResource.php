@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\Builder;
 
 class ToolResource extends Resource
 {
@@ -31,31 +32,52 @@ class ToolResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true),
 
-                Forms\Components\Section::make('Form Builder')
-                    ->description('Define the inputs required for this tool.')
+                Forms\Components\Section::make('Visual Form Builder')
+                    ->description('Drag and drop blocks to build the tool interface.')
                     ->schema([
-                        Forms\Components\Repeater::make('form_schema')
-                            ->label('Input Fields')
-                            ->schema([
-                                Forms\Components\TextInput::make('label')
-                                    ->required()
-                                    ->label('Input Label'),
-                                Forms\Components\TextInput::make('variable')
-                                    ->required()
-                                    ->label('Variable Name')
-                                    ->helperText('Use this in the template as {{variable}}'),
-                                Forms\Components\Select::make('type')
-                                    ->options([
-                                        'text' => 'Text Input',
-                                        'number' => 'Number',
-                                        'ip' => 'IP Address',
-                                        'select' => 'Select Dropdown', // Could expand to support options
-                                    ])
-                                    ->required(),
-                                Forms\Components\TextInput::make('default')
-                                    ->label('Default Value'),
+                        Builder::make('form_schema')
+                            ->blocks([
+                                Builder\Block::make('text_input')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('label')->required(),
+                                        Forms\Components\TextInput::make('variable')->required()->prefix('{{')->suffix('}}'),
+                                        Forms\Components\TextInput::make('placeholder'),
+                                        Forms\Components\TextInput::make('regex')->label('Regex Validation'),
+                                        Forms\Components\TextInput::make('helper_text'),
+                                    ]),
+                                Builder\Block::make('select_input')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('label')->required(),
+                                        Forms\Components\TextInput::make('variable')->required()->prefix('{{')->suffix('}}'),
+                                        Forms\Components\Repeater::make('options')
+                                            ->schema([
+                                                Forms\Components\TextInput::make('label')->required(),
+                                                Forms\Components\TextInput::make('value')->required(),
+                                            ])
+                                            ->columns(2),
+                                    ]),
+                                Builder\Block::make('switch_input')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('label')->required(),
+                                        Forms\Components\TextInput::make('variable')->required()->prefix('{{')->suffix('}}'),
+                                        Forms\Components\Toggle::make('default_state'),
+                                    ]),
+                                Builder\Block::make('ip_input')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('label')->required(),
+                                        Forms\Components\TextInput::make('variable')->required()->prefix('{{')->suffix('}}'),
+                                        Forms\Components\Toggle::make('cidr_allowed')->label('Allow CIDR'),
+                                    ]),
+                                Builder\Block::make('section_group')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('title')->required(),
+                                        // Nested builders are complex in Filament, sticking to simple separator for now
+                                        Forms\Components\Placeholder::make('separator')->content('--- Section Separator ---'),
+                                    ]),
                             ])
-                            ->columns(4),
+                            ->reorderable()
+                            ->cloneable()
+                            ->collapsible()
                     ]),
 
                 Forms\Components\Section::make('Script Template')
@@ -63,7 +85,7 @@ class ToolResource extends Resource
                         Forms\Components\Textarea::make('script_template')
                             ->label('RouterOS Script Template')
                             ->rows(10)
-                            ->helperText('Use {{variable}} syntax. Supports basic logic handled by frontend engine.')
+                            ->helperText('Use {{variable}} syntax corresponding to the blocks above.')
                             ->required(),
                     ]),
             ]);
