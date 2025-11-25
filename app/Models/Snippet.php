@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,6 +11,7 @@ class Snippet extends Model
 {
     use HasFactory;
 
+    /** @var array<string, string> */
     protected $fillable = [
         'title',
         'description',

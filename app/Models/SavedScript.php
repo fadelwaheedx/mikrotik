@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SavedScript extends Model
 {
     use HasFactory;
 
+    /** @var array<string, string> */
     protected $fillable = [
         'user_id',
         'title',
@@ -17,7 +21,8 @@ class SavedScript extends Model
         'generated_script',
     ];
 
-    public function user()
+    /** @return BelongsTo<User, SavedScript> */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,6 +11,7 @@ class Game extends Model
 {
     use HasFactory;
 
+    /** @var array<string, string> */
     protected $fillable = [
         'name',
         'slug',
@@ -17,9 +20,13 @@ class Game extends Model
         'compatibility',
     ];
 
-    protected $casts = [
-        'ports_tcp' => 'array',
-        'ports_udp' => 'array',
-        'compatibility' => 'array',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'ports_tcp' => 'array',
+            'ports_udp' => 'array',
+            'compatibility' => 'array',
+        ];
+    }
 }

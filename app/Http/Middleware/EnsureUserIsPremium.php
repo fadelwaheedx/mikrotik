@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -15,7 +17,11 @@ class EnsureUserIsPremium
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user() || ! $request->user()->is_premium) {
+        if (! $request->user()) {
+             return redirect()->route('login');
+        }
+
+        if (! $request->user()->is_premium) {
             return redirect()->route('subscription')->with('error', 'This tool requires a Premium subscription.');
         }
 

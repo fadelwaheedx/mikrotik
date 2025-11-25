@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,6 +11,7 @@ class Tool extends Model
 {
     use HasFactory;
 
+    /** @var array<string, string> */
     protected $fillable = [
         'name',
         'slug',
@@ -16,7 +19,11 @@ class Tool extends Model
         'script_template',
     ];
 
-    protected $casts = [
-        'form_schema' => 'array',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'form_schema' => 'array',
+        ];
+    }
 }
