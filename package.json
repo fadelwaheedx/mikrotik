@@ -23,6 +23,7 @@
         "@testing-library/react": "^14.2.0",
         "@testing-library/jest-dom": "^6.4.0",
         "vitest-axe": "^0.1.0",
-        "@playwright/test": "^1.41.0"
+        "@playwright/test": "^1.41.0",
+        "sonner": "^1.4.0"
     }
 }

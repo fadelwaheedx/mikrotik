@@ -1,6 +1,7 @@
 import { Copy, Download, Save } from 'lucide-react';
 import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { toast } from 'sonner';
 
 export default function ScriptGenerator({
     title,
@@ -10,7 +11,6 @@ export default function ScriptGenerator({
     dataToSave = {}, // Optional: Object containing the form input data to save
     onVersionChange = null // Optional: Callback when version toggles
 }) {
-    const [copyFeedback, setCopyFeedback] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [version, setVersion] = useState('v7');
     const { auth } = usePage().props;
@@ -23,15 +23,14 @@ export default function ScriptGenerator({
     const handleCopy = () => {
         if (generatedScript) {
             navigator.clipboard.writeText(generatedScript);
-            setCopyFeedback(true);
-            setTimeout(() => setCopyFeedback(false), 2000);
+            toast.success('Script copied to clipboard');
         }
     };
 
     const handleSave = () => {
         if (!generatedScript) return;
         if (!auth.user) {
-             alert("Please login to save scripts.");
+             toast.error("Please login to save scripts.");
              return;
         }
 
@@ -44,12 +43,11 @@ export default function ScriptGenerator({
         }, {
             onSuccess: () => {
                 setIsSaving(false);
-                // Toast notification would go here
-                alert("Script saved to your profile!");
+                toast.success("Script saved to your profile!");
             },
             onError: () => {
                 setIsSaving(false);
-                alert("Failed to save script.");
+                toast.error("Failed to save script.");
             }
         });
     };
@@ -110,7 +108,7 @@ export default function ScriptGenerator({
                                     className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                                 >
                                     <Copy className="h-3.5 w-3.5 mr-1.5" />
-                                    {copyFeedback ? 'Copied!' : 'Copy'}
+                                    Copy
                                 </button>
                                 <button
                                     onClick={handleDownload}

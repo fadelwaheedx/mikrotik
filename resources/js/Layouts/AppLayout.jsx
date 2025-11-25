@@ -10,6 +10,7 @@ import {
     X
 } from 'lucide-react';
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 
 export default function AppLayout({ children }) {
     const { url } = usePage();
@@ -94,6 +95,7 @@ export default function AppLayout({ children }) {
                     {children}
                 </main>
             </div>
+            <Toaster position="top-right" />
         </div>
     );
 }

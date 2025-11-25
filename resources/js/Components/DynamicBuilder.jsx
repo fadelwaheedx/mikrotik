@@ -2,9 +2,12 @@ import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import ScriptGenerator from '@/Components/ScriptGenerator';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export default function DynamicBuilder({ tool }) {
     const [script, setScript] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Parse the schema from the Builder block format
     // Tool schema is array of { type: 'block_type', data: { ...fields } }
@@ -40,7 +43,21 @@ export default function DynamicBuilder({ tool }) {
     };
 
     const onSubmit = (data) => {
-        setScript(generateScript(data));
+        setIsGenerating(true);
+
+        // Simulate a tiny delay for UX feel (optional, but good for "generating")
+        setTimeout(() => {
+            try {
+                const generated = generateScript(data);
+                setScript(generated);
+                toast.success('Script generated successfully!');
+            } catch (error) {
+                toast.error('Failed to generate script.');
+                console.error(error);
+            } finally {
+                setIsGenerating(false);
+            }
+        }, 500);
     };
 
     const renderBlock = (block, index) => {
@@ -124,9 +141,11 @@ export default function DynamicBuilder({ tool }) {
             <div className="pt-4">
                 <button
                     type="submit"
-                    className="w-full inline-flex justify-center items-center px-4 py-3 bg-mikrotik-blue border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                    disabled={isGenerating}
+                    className={`w-full inline-flex justify-center items-center px-4 py-3 bg-mikrotik-blue border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 ${isGenerating ? 'opacity-75 cursor-not-allowed' : ''}`}
                 >
-                    Generate Script
+                    {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isGenerating ? 'Generating...' : 'Generate Script'}
                 </button>
             </div>
         </form>
