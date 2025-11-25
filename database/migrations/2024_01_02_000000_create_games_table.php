@@ -17,16 +17,8 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->json('ports_tcp')->nullable();
             $table->json('ports_udp')->nullable();
-            $table->json('compatibility')->nullable(); // e.g. ['v6', 'v7']
+            $table->json('compatibility')->nullable();
             $table->timestamps();
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('games');
     }
 };

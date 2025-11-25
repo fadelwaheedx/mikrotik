@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Models\SavedScript;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
-class ToolController extends Controller
+class ToolsController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'title' => 'required|string|max:255',
             'type' => 'required|string|max:50',
-            'config_json' => 'required|string', // JSON string of inputs
+            'config_json' => 'required|string',
             'generated_script' => 'required|string',
         ]);
 
@@ -28,7 +30,7 @@ class ToolController extends Controller
         return redirect()->back()->with('success', 'Script saved successfully.');
     }
 
-    public function destroy($id)
+    public function destroy(string $id): RedirectResponse
     {
         $script = SavedScript::where('user_id', auth()->id())->findOrFail($id);
         $script->delete();

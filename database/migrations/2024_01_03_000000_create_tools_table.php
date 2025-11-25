@@ -15,17 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->json('form_schema')->nullable(); // Stores input definitions
-            $table->text('script_template')->nullable(); // The template with {{placeholders}}
+            $table->json('form_schema')->nullable();
+            $table->text('script_template')->nullable();
             $table->timestamps();
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('tools');
     }
 };

@@ -1,14 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Tool;
 
 test('api returns tool schema', function () {
-    // We need an API endpoint to fetch the tool for the frontend
-    // Assuming Route::get('/tools/{tool}', ...) exists and returns the Tool model.
-
-    // Since we haven't explicitly created that API route in this chat,
-    // we'll test the Model serialization which is what the API would return.
-
     $tool = Tool::create([
         'name' => 'Test Tool',
         'slug' => 'test-tool',

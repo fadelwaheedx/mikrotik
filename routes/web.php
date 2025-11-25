@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\GameController;
+use App\Http\Controllers\GamesController;
 use App\Http\Controllers\LoadBalancing\PCCController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ToolController;
+use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\EnsureUserIsPremium;
 use App\Models\SavedScript;
 use Illuminate\Foundation\Application;
@@ -39,16 +39,18 @@ Route::middleware('auth')->group(function () {
     Route::middleware([EnsureUserIsPremium::class])->group(function () {
         Route::get('/load-balancing/pcc', [PCCController::class, 'index'])->name('load-balancing.pcc');
         Route::get('/load-balancing/ecmp', function() { return Inertia::render('LoadBalancing/ECMP'); })->name('load-balancing.ecmp');
-        Route::get('/routing/game-ports', function() { return Inertia::render('Routing/GameRouting'); })->name('routing.game-ports');
         Route::get('/vpn/server', function() { return Inertia::render('VPN/VPNServer'); })->name('vpn.server');
+
+        // Game Routing (Uses Dynamic Data)
+        Route::get('/routing/game-ports', function() { return Inertia::render('Routing/GameRouting'); })->name('routing.game-ports');
     });
 
     // Save Tool Script
-    Route::post('/tools/save', [ToolController::class, 'store'])->name('tools.save');
-    Route::delete('/tools/{id}', [ToolController::class, 'destroy'])->name('tools.destroy');
+    Route::post('/tools/save', [ToolsController::class, 'store'])->name('tools.save');
+    Route::delete('/tools/{id}', [ToolsController::class, 'destroy'])->name('tools.destroy');
 
     // API Routes (Consumed by Frontend)
-    Route::get('/api/games', [GameController::class, 'index'])->name('api.games');
+    Route::get('/api/games', [GamesController::class, 'index'])->name('api.games');
 
     // Subscription
     Route::get('/subscription', function() { return Inertia::render('Subscription'); })->name('subscription');

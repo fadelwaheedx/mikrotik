@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-// Mocking the logic function for unit testing the engine concept
+// Logic extracted for testing purposes (simulating the component logic)
 const generateScript = (template, data) => {
     let generated = template || '';
     for (const [key, value] of Object.entries(data)) {
@@ -25,11 +25,10 @@ describe('Dynamic Engine Logic', () => {
 
     it('handles missing data gracefully', () => {
         const template = 'print {{missing}}';
-        const data = {}; // No keys
+        const data = {};
 
         const result = generateScript(template, data);
 
-        // Should remain unchanged if key not found in data
         expect(result).toBe('print {{missing}}');
     });
 });

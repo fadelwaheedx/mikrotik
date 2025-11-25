@@ -16,17 +16,9 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('category');
-            $table->text('code')->nullable(); // Placeholder content
+            $table->text('code')->nullable();
             $table->string('source_url');
             $table->timestamps();
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('snippets');
     }
 };

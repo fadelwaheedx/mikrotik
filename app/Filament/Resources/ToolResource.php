@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ToolResource\Pages;
@@ -26,7 +28,7 @@ class ToolResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))),
+                    ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state ?? ''))),
 
                 Forms\Components\TextInput::make('slug')
                     ->required()
@@ -71,7 +73,6 @@ class ToolResource extends Resource
                                 Builder\Block::make('section_group')
                                     ->schema([
                                         Forms\Components\TextInput::make('title')->required(),
-                                        // Nested builders are complex in Filament, sticking to simple separator for now
                                         Forms\Components\Placeholder::make('separator')->content('--- Section Separator ---'),
                                     ]),
                             ])
