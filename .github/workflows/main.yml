@@ -69,19 +69,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-      
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer
-      
+
       # Tries to install dependencies, ignoring platform reqs if local env differs
       - name: Install Dependencies (Safe Mode)
         run: composer install --prefer-dist --no-progress --ignore-platform-reqs
-      
+
       - name: Run Pint (Fix Mode)
         run: vendor/bin/pint
-      
+
       - name: Commit Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -99,21 +99,21 @@ jobs:
     if: needs.governance.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer
-      
+
       - uses: actions/cache@v4
         with:
           path: vendor
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-      
+
       # NOTE: This will fail if composer.json has errors. Fix dependencies locally first.
       - name: Install Dependencies
         run: composer install --prefer-dist --no-progress --optimize-autoloader
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: app-build
@@ -129,12 +129,12 @@ jobs:
     if: needs.governance.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - run: npm ci
       - run: npm run build
 
@@ -172,7 +172,7 @@ jobs:
         with:
           name: app-build
           path: .
-      
+
       - name: Prepare Env
         run: |
           cp .env.example .env && php artisan key:generate
@@ -203,7 +203,7 @@ jobs:
         with:
           name: app-build
           path: .
-      
+
       - name: TruffleHog (Secrets)
         uses: trufflesecurity/trufflehog@main
         with:
