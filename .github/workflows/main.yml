@@ -82,8 +82,9 @@ jobs:
           php-version: '8.3'
           tools: composer
       
-      - name: Install Dependencies
-        run: composer install --prefer-dist --no-progress
+      # محاولة التثبيت حتى لو فشلت الاعتماديات لإصلاح الستايل فقط
+      - name: Install Dependencies (Ignore Platform)
+        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
       
       - name: Run Pint (Fix Mode)
         run: vendor/bin/pint
@@ -111,13 +112,14 @@ jobs:
           php-version: '8.3'
           tools: composer
       
-      # SAFE CACHING: Removed inline syntax to prevent quote conflicts
       - uses: actions/cache@v4
         with:
           path: vendor
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
       
-      - run: composer install --prefer-dist --no-progress --optimize-autoloader
+      # هذه الخطوة هي التي تفشل عندك حالياً - يجب إصلاح composer.json
+      - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-progress --optimize-autoloader
       
       - uses: actions/upload-artifact@v4
         with:
@@ -224,20 +226,3 @@ jobs:
     if: false
     steps:
       - run: echo "Deploy logic"
-
-  # -----------------------------------------------------------------------------
-  # 7. NOTIFICATIONS
-  # -----------------------------------------------------------------------------
-  notify:
-    name: 🔔 Notification Logic
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [integration-sharded, security-audit]
-    steps:
-      - name: Determine Status
-        run: |
-          if [[ "${{ needs.integration-sharded.result }}" == "success" && "${{ needs.security-audit.result }}" == "success" ]]; then
-            echo "Pipeline Passed"
-          else
-            echo "Pipeline Failed"
-          fi
