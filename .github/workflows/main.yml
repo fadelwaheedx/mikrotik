@@ -1,4 +1,4 @@
-name: The Zenith v5.1 (Autonomous & Sharded)
+name: The Zenith v5.2 (Autonomous & Sharded)
 
 on:
   push:
@@ -6,13 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# -----------------------------------------------------------------------------
-# 🔐 PERMISSIONS: REQUIRED FOR AUTO-FIXER & PR COMMENTS
-# -----------------------------------------------------------------------------
 permissions:
-  contents: write      # Required for Git Auto-Commit (Auto-Fixer)
-  pull-requests: write # Required for PR comments
-  checks: write        # Required for test reporting
+  contents: write      
+  pull-requests: write 
+  checks: write        
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -32,7 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # SAFE DRAFT CHECK: Handles both PRs and Pushes (where draft is null)
       - name: Check Draft Status
         id: check_draft
         run: |
@@ -42,7 +38,6 @@ jobs:
             echo "is_draft=false" >> $GITHUB_OUTPUT
           fi
 
-      # SYNTAX FIX: Using strict YAML indentation here to prevent parsing errors
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -66,17 +61,16 @@ jobs:
               - 'tailwind.config.js'
 
   # -----------------------------------------------------------------------------
-  # 2. AUTO-HEALING CODE STYLE (The "Assistant")
+  # 2. AUTO-HEALING CODE STYLE
   # -----------------------------------------------------------------------------
   auto-fix-style:
     name: 🪄 Auto-Fix Style (Pint)
     runs-on: ubuntu-latest
     needs: governance
-    # Only run on PRs, and only if Backend files changed
     if: needs.governance.outputs.backend == 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.head_ref }} } # Checkout the PR branch
+        with: { ref: ${{ github.head_ref }} }
       
       - uses: shivammathur/setup-php@v2
         with: { php-version: '8.3', tools: composer }
@@ -110,15 +104,14 @@ jobs:
         with: { path: vendor, key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }} }
       - run: composer install --prefer-dist --no-progress --optimize-autoloader
       
-      # OPTIONAL: Generate SBOM (Remove if you don't use CycloneDX yet)
-      # - name: Generate SBOM
-      #   run: composer require cyclonedx/cyclonedx-php-composer --dev && vendor/bin/cyclonedx-php-composer -o sbom.xml
-      
+      # FIX: Expanded to block style to allow multi-line path
       - uses: actions/upload-artifact@v4
-        with: { name: app-build, path: |
-          vendor
-          . 
-        , retention-days: 1 }
+        with:
+          name: app-build
+          path: |
+            vendor
+            .
+          retention-days: 1
 
   build-frontend:
     name: 🎨 Build Frontend
@@ -133,26 +126,24 @@ jobs:
       - run: npm run build
 
   # -----------------------------------------------------------------------------
-  # 4. SHARDED INTEGRATION TESTS (The "Speed Hack")
+  # 4. SHARDED INTEGRATION TESTS
   # -----------------------------------------------------------------------------
   integration-sharded:
     name: 🚀 Integration Shard (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
     needs: [build-backend, governance]
-    # Skip if Draft PR
     if: needs.governance.outputs.is_draft == 'false'
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4] # Runs 4 VMs in parallel
+        shard: [1, 2, 3, 4]
     services:
       mysql:
         image: mysql:8.0
         env: { MYSQL_DATABASE: testing, MYSQL_ROOT_PASSWORD: password }
         ports: ['3306:3306']
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-retries=3
-        # RAM Disk Optimization
         volumes: ['/var/lib/mysql:/var/lib/mysql:rw,tmpfs']
       redis:
         image: redis:7
@@ -168,8 +159,6 @@ jobs:
           echo "DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=testing\nDB_USERNAME=root\nDB_PASSWORD=password" >> .env
           echo "CACHE_DRIVER=redis\nREDIS_HOST=127.0.0.1\nREDIS_PORT=6379" >> .env
 
-      # NOTE: Ensure your PHPUnit/Pest supports --shard (Requires PHPUnit 10+ or Paratest)
-      # If using standard Artisan Test without Paratest, remove the --shard flag.
       - name: Run Tests (Shard ${{ matrix.shard }})
         run: |
            php artisan test --parallel --testsuite=Integration --env=testing-ci
@@ -190,18 +179,13 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with: { path: ./, base: ${{ github.event.repository.default_branch }} }
 
-      # Snyk (Commented out until you have the Token)
-      # - name: Snyk Scan
-      #   uses: snyk/actions/php@master
-      #   env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
-
   # -----------------------------------------------------------------------------
   # 6. DEPLOYMENT (BLOCKED)
   # -----------------------------------------------------------------------------
   deploy:
     name: ⛔ Deploy (Disabled)
     runs-on: ubuntu-latest
-    if: false # Manually Disabled
+    if: false
     steps:
       - run: echo "Deploy logic"
 
@@ -221,11 +205,3 @@ jobs:
           else
             echo "Pipeline Failed"
           fi
-      
-      # ⬇️ SLACK WEBHOOK COMMENTED OUT ⬇️
-      # - uses: slackapi/slack-github-action@v1.26.0
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #   with:
-      #     payload: |
-      #       { "text": "Pipeline finished." }
