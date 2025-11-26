@@ -6,6 +6,7 @@ import {
     ShieldCheck,
     Settings,
     Activity,
+    Calculator,
     Menu,
     X
 } from 'lucide-react';
@@ -22,6 +23,7 @@ export default function AppLayout({ children }) {
         { name: 'QoS & Traffic', href: '/qos/simple-queue', icon: Activity, current: url.startsWith('/qos') },
         { name: 'Routing & Firewall', href: '/routing/game-ports', icon: ShieldCheck, current: url.startsWith('/routing') },
         { name: 'VPN Services', href: '/vpn', icon: Server, current: url.startsWith('/vpn') },
+        { name: 'Calculators', href: '/tools/bandwidth-calculator', icon: Calculator, current: url.startsWith('/tools') },
         { name: 'Settings', href: '/profile', icon: Settings, current: url.startsWith('/profile') },
     ];
 

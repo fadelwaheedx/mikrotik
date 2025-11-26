@@ -35,6 +35,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/hotspot/user-profile', function() { return Inertia::render('Hotspot/UserProfile'); })->name('hotspot.user-profile');
     Route::get('/routing/content-routing', function() { return Inertia::render('Routing/ContentRouting'); })->name('routing.content-routing');
 
+    // Calculators & Utilities
+    Route::get('/tools/bandwidth-calculator', function() { return Inertia::render('Tools/BandwidthCalculator'); })->name('tools.bandwidth');
+    Route::get('/tools/subnet-calculator', function() { return Inertia::render('Tools/SubnetCalculator'); })->name('tools.subnet');
+    Route::get('/tools/doh-config', function() { return Inertia::render('Tools/DohConfig'); })->name('tools.doh');
+
     // Premium Tools
     Route::middleware([EnsureUserIsPremium::class])->group(function () {
         Route::get('/load-balancing/pcc', [PCCController::class, 'index'])->name('load-balancing.pcc');
