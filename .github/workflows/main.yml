@@ -1,15 +1,19 @@
-name: The Zenith v5.2 (Autonomous & Sharded)
+name: The Zenith v5.3 (Bulletproof)
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   pull_request:
-    types: [opened, synchronize, reopened]
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
-  contents: write      
-  pull-requests: write 
-  checks: write        
+  contents: write
+  pull-requests: write
+  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -28,7 +32,7 @@ jobs:
       is_draft: ${{ steps.check_draft.outputs.is_draft }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check Draft Status
         id: check_draft
         run: |
@@ -70,10 +74,13 @@ jobs:
     if: needs.governance.outputs.backend == 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.head_ref }} }
+        with:
+          ref: ${{ github.head_ref }}
       
       - uses: shivammathur/setup-php@v2
-        with: { php-version: '8.3', tools: composer }
+        with:
+          php-version: '8.3'
+          tools: composer
       
       - name: Install Dependencies
         run: composer install --prefer-dist --no-progress
@@ -98,13 +105,20 @@ jobs:
     if: needs.governance.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v4
+      
       - uses: shivammathur/setup-php@v2
-        with: { php-version: '8.3', tools: composer }
+        with:
+          php-version: '8.3'
+          tools: composer
+      
+      # SAFE CACHING: Removed inline syntax to prevent quote conflicts
       - uses: actions/cache@v4
-        with: { path: vendor, key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }} }
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+      
       - run: composer install --prefer-dist --no-progress --optimize-autoloader
       
-      # FIX: Expanded to block style to allow multi-line path
       - uses: actions/upload-artifact@v4
         with:
           name: app-build
@@ -120,8 +134,12 @@ jobs:
     if: needs.governance.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
-        with: { node-version: '18', cache: 'npm' }
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
       - run: npm ci
       - run: npm run build
 
@@ -141,23 +159,37 @@ jobs:
     services:
       mysql:
         image: mysql:8.0
-        env: { MYSQL_DATABASE: testing, MYSQL_ROOT_PASSWORD: password }
-        ports: ['3306:3306']
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - '3306:3306'
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-retries=3
-        volumes: ['/var/lib/mysql:/var/lib/mysql:rw,tmpfs']
+        volumes:
+          - '/var/lib/mysql:/var/lib/mysql:rw,tmpfs'
       redis:
         image: redis:7
-        ports: ['6379:6379']
+        ports:
+          - '6379:6379'
         options: --health-cmd="redis-cli ping"
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: app-build, path: . }
+        with:
+          name: app-build
+          path: .
       
       - name: Prepare Env
         run: |
           cp .env.example .env && php artisan key:generate
-          echo "DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=testing\nDB_USERNAME=root\nDB_PASSWORD=password" >> .env
-          echo "CACHE_DRIVER=redis\nREDIS_HOST=127.0.0.1\nREDIS_PORT=6379" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=testing" >> .env
+          echo "DB_USERNAME=root" >> .env
+          echo "DB_PASSWORD=password" >> .env
+          echo "CACHE_DRIVER=redis" >> .env
+          echo "REDIS_HOST=127.0.0.1" >> .env
+          echo "REDIS_PORT=6379" >> .env
 
       - name: Run Tests (Shard ${{ matrix.shard }})
         run: |
@@ -173,11 +205,15 @@ jobs:
     if: needs.governance.outputs.is_draft == 'false'
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: app-build, path: . }
+        with:
+          name: app-build
+          path: .
       
       - name: TruffleHog (Secrets)
         uses: trufflesecurity/trufflehog@main
-        with: { path: ./, base: ${{ github.event.repository.default_branch }} }
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
 
   # -----------------------------------------------------------------------------
   # 6. DEPLOYMENT (BLOCKED)
