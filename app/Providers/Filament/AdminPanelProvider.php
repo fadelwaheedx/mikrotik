@@ -19,7 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use AlperenErsoy\Filament\RolesPermissions\FilamentRolesPermissionsPlugin;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\SpatieLaravelSettingsPlugin;
 use Filament\SpatieLaravelMediaLibraryPlugin;
 use ShuvroRoy\FilamentSpatieLaravelHealth\FilamentSpatieLaravelHealthPlugin;
@@ -63,7 +63,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
-                FilamentRolesPermissionsPlugin::make(),
+                FilamentShieldPlugin::make(),
                 SpatieLaravelSettingsPlugin::new()
                     ->pages([
                         GeneralSettings::class,

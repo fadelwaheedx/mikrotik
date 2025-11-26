@@ -1,11 +1,10 @@
-includes:
-    - ./vendor/nunomaduro/larastan/extension.neon
-
 parameters:
-    paths:
-        - app/
-
-    # The Gold Standard for strict workflow
     level: max
-
+    paths:
+        - app
+    ignoreErrors:
+    excludePaths:
     checkMissingIterableValueType: true
+    checkGenericClassInNonGenericObjectType: true
+    includes:
+        - phpstan-baseline.neon

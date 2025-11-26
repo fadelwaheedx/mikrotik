@@ -1,228 +1,220 @@
-name: The Zenith v5.3 (Bulletproof)
+name: The Zenith Laravel CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-
-permissions:
-  contents: write
-  pull-requests: write
-  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
-  # -----------------------------------------------------------------------------
-  # 1. GOVERNANCE & INTELLIGENCE
-  # -----------------------------------------------------------------------------
-  governance:
-    name: 🧠 Governance & Changes
+  lint:
+    name: Lint CI Workflow & Code Ownership
     runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      is_draft: ${{ steps.check_draft.outputs.is_draft }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check Draft Status
-        id: check_draft
+      - name: Lint GitHub Actions Workflow
+        uses: gajerdrum/github-action-yamllint@v1
+        with:
+          file_path: .github/workflows/main.yml
+      - name: Check for CODEOWNERS file
         run: |
-          if [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
-            echo "is_draft=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_draft=false" >> $GITHUB_OUTPUT
-          fi
+          if [ ! -f .github/CODEOWNERS ]; then
+            echo "::error::CODEOWNERS file is missing. Please define code ownership."
+            exit 1
 
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'app/**'
-              - 'bootstrap/**'
-              - 'config/**'
-              - 'database/**'
-              - 'routes/**'
-              - 'tests/**'
-              - 'composer.json'
-              - 'composer.lock'
-              - 'phpunit.xml'
-            frontend:
-              - 'resources/**'
-              - 'public/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'vite.config.js'
-              - 'tailwind.config.js'
-
-  # -----------------------------------------------------------------------------
-  # 2. AUTO-HEALING CODE STYLE
-  # -----------------------------------------------------------------------------
-  auto-fix-style:
-    name: 🪄 Auto-Fix Style (Pint)
+  setup:
+    name: Setup Dependencies
     runs-on: ubuntu-latest
-    needs: governance
-    if: needs.governance.outputs.backend == 'true' && github.event_name == 'pull_request'
+    needs: lint
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-      
       - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-      
-      # محاولة التثبيت حتى لو فشلت الاعتماديات لإصلاح الستايل فقط
-      - name: Install Dependencies (Ignore Platform)
-        run: composer install --prefer-dist --no-progress --ignore-platform-reqs
-      
-      - name: Run Pint (Fix Mode)
-        run: vendor/bin/pint
-      
-      - name: Commit Changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "style: 🎨 Auto-fixed code style (Zenith Pipeline)"
-          commit_user_name: "Zenith Bot"
-          commit_user_email: "bot@zenith-pipeline.com"
-
-  # -----------------------------------------------------------------------------
-  # 3. BUILD ARTIFACTS
-  # -----------------------------------------------------------------------------
-  build-backend:
-    name: 🏗️ Build Backend
-    runs-on: ubuntu-latest
-    needs: governance
-    if: needs.governance.outputs.backend == 'true'
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-      
+        with: { php-version: '8.3', tools: composer }
       - uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-      
-      # هذه الخطوة هي التي تفشل عندك حالياً - يجب إصلاح composer.json
+        with: { path: ~/.composer/cache, key: composer-cache-${{ hashFiles('**/composer.lock') }} }
       - name: Install Composer Dependencies
-        run: composer install --prefer-dist --no-progress --optimize-autoloader
-      
+        run: composer install --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with: { node-version: '18', cache: 'npm' }
+      - run: npm ci
       - uses: actions/upload-artifact@v4
         with:
-          name: app-build
+          name: project-dependencies
           path: |
-            vendor
+            vendor/
+            node_modules/
             .
-          retention-days: 1
 
-  build-frontend:
-    name: 🎨 Build Frontend
+  backend-analysis:
+    name: Backend Analysis (${{ matrix.task }})
     runs-on: ubuntu-latest
-    needs: governance
-    if: needs.governance.outputs.frontend == 'true'
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - run: npm ci
-      - run: npm run build
-
-  # -----------------------------------------------------------------------------
-  # 4. SHARDED INTEGRATION TESTS
-  # -----------------------------------------------------------------------------
-  integration-sharded:
-    name: 🚀 Integration Shard (${{ matrix.shard }}/${{ strategy.job-total }})
-    runs-on: ubuntu-latest
-    needs: [build-backend, governance]
-    if: needs.governance.outputs.is_draft == 'false'
-    timeout-minutes: 10
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_DATABASE: testing
-          MYSQL_ROOT_PASSWORD: password
-        ports:
-          - '3306:3306'
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-retries=3
-        volumes:
-          - '/var/lib/mysql:/var/lib/mysql:rw,tmpfs'
-      redis:
-        image: redis:7
-        ports:
-          - '6379:6379'
-        options: --health-cmd="redis-cli ping"
+        task: [test, phpstan-max, pint, phpinsights, deptrac]
     steps:
       - uses: actions/download-artifact@v4
-        with:
-          name: app-build
-          path: .
-      
-      - name: Prepare Env
+        with: { name: project-dependencies, path: . }
+      - name: Prepare SQLite Environment
         run: |
           cp .env.example .env && php artisan key:generate
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=testing" >> .env
-          echo "DB_USERNAME=root" >> .env
-          echo "DB_PASSWORD=password" >> .env
-          echo "CACHE_DRIVER=redis" >> .env
-          echo "REDIS_HOST=127.0.0.1" >> .env
-          echo "REDIS_PORT=6379" >> .env
+          touch database/database.sqlite
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=${{ github.workspace }}/database/database.sqlite" >> .env
+      - name: Run Tests with N+1 Detection
+        if: matrix.task == 'test'
+        env: { PREVENT_LAZY_LOADING: true }
+        run: php artisan test --parallel
+      - name: Run Maximum-Level Static Analysis (PHPStan)
+        if: matrix.task == 'phpstan-max'
+        run: vendor/bin/phpstan analyse
+      - name: Run Laravel Pint
+        if: matrix.task == 'pint'
+        run: vendor/bin/pint --test
+      - name: Run PHP Insights
+        if: matrix.task == 'phpinsights'
+        run: vendor/bin/phpinsights --no-interaction --min-quality=98 --min-architecture=98
+      - name: Enforce Architectural Boundaries
+        if: matrix.task == 'deptrac'
+        run: vendor/bin/deptrac analyse
 
-      - name: Run Tests (Shard ${{ matrix.shard }})
-        run: |
-           php artisan test --parallel --testsuite=Integration --env=testing-ci
-
-  # -----------------------------------------------------------------------------
-  # 5. SECURITY & COMPLIANCE
-  # -----------------------------------------------------------------------------
-  security-audit:
-    name: 👮 Security & Compliance
+  integration-test:
+    name: Integration Tests (MySQL & Redis)
     runs-on: ubuntu-latest
-    needs: [build-backend, governance]
-    if: needs.governance.outputs.is_draft == 'false'
+    needs: setup
+    services:
+      mysql: { image: mysql:8.0, env: { MYSQL_DATABASE: testing, MYSQL_ROOT_PASSWORD: password }, ports: ['3306:3306'], options: --health-cmd="mysqladmin ping" }
+      redis: { image: redis:7, ports: ['6379:6379'], options: --health-cmd="redis-cli ping" }
     steps:
       - uses: actions/download-artifact@v4
-        with:
-          name: app-build
-          path: .
-      
-      - name: TruffleHog (Secrets)
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
+        with: { name: project-dependencies, path: . }
+      - name: Prepare Environment
+        run: |
+          cp .env.example .env && php artisan key:generate
+          echo "DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=${{ job.services.mysql.ports['3306'] }}\nDB_DATABASE=testing\nDB_USERNAME=root\nDB_PASSWORD=password" >> .env
+          echo "CACHE_DRIVER=redis\nREDIS_HOST=127.0.0.1\nREDIS_PORT=${{ job.services.redis.ports['6379'] }}" >> .env
+      - name: Wait for Services
+        run: |
+          until mysqladmin ping -h"127.0.0.1" -P"${{ job.services.mysql.ports['3306'] }}" -u"root" -p"password" --silent; do sleep 1; done
+          until redis-cli -h 127.0.0.1 -p ${{ job.services.redis.ports['6379'] }} ping; do sleep 1; done
+      - run: php artisan migrate --force
+      - run: php artisan test --testsuite=Integration
 
-  # -----------------------------------------------------------------------------
-  # 6. DEPLOYMENT (BLOCKED)
-  # -----------------------------------------------------------------------------
-  deploy:
-    name: ⛔ Deploy (Disabled)
+  security-and-compliance-gate:
+    name: Ultimate Security & Compliance Gate
     runs-on: ubuntu-latest
-    if: false
+    needs: setup
     steps:
-      - run: echo "Deploy logic"
+      - uses: actions/download-artifact@v4
+        with: { name: project-dependencies, path: . }
+      - name: Scan for Leaked Secrets
+        uses: trufflesecurity/trufflehog@main
+        with: { path: ./, base: ${{ github.event.repository.default_branch }} }
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+      - name: Snyk Scan (SCA)
+        uses: snyk/actions/php@master
+        env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
+        with: { args: --all-projects }
+      - name: Deep Code Analysis (SAST via CodeQL)
+        uses: github/codeql-action/init@v3
+        with: { languages: php }
+      - uses: github/codeql-action/analyze@v3
+      - name: Scan for License Compliance
+        uses: boyney123/licence-compliance-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_licenses: 'MIT, Apache-2.0, ISC, BSD-3-Clause'
+
+  deploy:
+    name: Deploy to ${{ matrix.environment }} via Forge
+    runs-on: ubuntu-latest
+    needs: [backend-analysis, integration-test, security-and-compliance-gate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        environment: [Staging]
+        include:
+          - environment: Staging
+            hook_url: ${{ secrets.FORGE_DEPLOYMENT_HOOK_URL_STAGING }}
+            url: https://staging.example.com
+    environment: { name: ${{ matrix.environment }}, url: ${{ matrix.url }} }
+    steps:
+      - name: Trigger Laravel Forge Deployment
+        run: curl -X POST "${{ matrix.hook_url }}"
+
+  smoke-and-performance-test:
+    name: Post-Deployment Validation
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.3', tools: composer }
+      - run: composer install --prefer-dist --no-progress
+      - uses: nanasess/setup-chromedriver@v2
+      - name: Prepare Dusk Environment
+        run: |
+          cp .env.dusk.example .env && php artisan key:generate
+          echo "APP_URL=https://staging.example.com" >> .env
+      - name: Run Dusk Smoke Tests
+        run: php artisan dusk
+      - name: Run k6 Load Test
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: tests/performance/smoke.js
+          flags: '--vus 10 --duration 30s'
+        env:
+          K6_TARGET_URL: https://staging.example.com
+
+  pr-summary:
+    name: Post PR Summary
+    runs-on: ubuntu-latest
+    needs: [backend-analysis, integration-test, security-and-compliance-gate]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - name: Post Summary Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const backendStatus = '${{ needs.backend-analysis.result }}' === 'success' ? '✅' : '❌';
+            const integrationStatus = '${{ needs.integration-test.result }}' === 'success' ? '✅' : '❌';
+            const securityStatus = '${{ needs.security-and-compliance-gate.result }}' === 'success' ? '✅' : '❌';
+            const body = `### CI Pipeline Summary\n\n| Check | Status |\n| --- | --- |\n| Backend Analysis | ${backendStatus} |\n| Integration Tests | ${integrationStatus} |\n| Security & Compliance | ${securityStatus} |`;
+            github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: body });
+
+  release-and-notify:
+    name: Draft Release & Notify Team
+    runs-on: ubuntu-latest
+    needs: smoke-and-performance-test
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: release-drafter/release-drafter@v6
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "blocks": [
+                  { "type": "section", "text": { "type": "mrkdwn", "text": "✅ Main branch pipeline finished for `${{ github.repository }}`" } },
+                  { "type": "section", "fields": [
+                    { "type": "mrkdwn", "text": "*Status:*\n${{ job.status }}" },
+                    { "type": "mrkdwn", "text": "*Commit:*\n`<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha_short }}>`" }
+                  ] },
+                  { "type": "actions", "elements": [
+                    { "type": "button", "text": { "type": "plain_text", "text": "View Run" }, "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+                  ] }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
